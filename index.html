@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoMagnetix - Grid Efficiency Simulator</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .grid-layout {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h2 {
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      color: var(--primary);
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .metric-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .metric-title {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .metric-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .battery-container {
+      margin-top: 15px;
+    }
+
+    .battery-bar-outer {
+      width: 100%;
+      height: 24px;
+      background: #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .battery-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: #22c55e;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    .battery-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #0f172a;
+    }
+
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e0f2fe;
+      border-left: 4px solid var(--primary);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>EcoMagnetix</h1>
+      <p>Grid Efficiency Simulator - Rumah Mandiri Energi</p>
+    </header>
+
+    <div class="grid-layout">
+      <!-- Panel Kontrol Input -->
+      <div class="card">
+        <h2>Parameter Sistem</h2>
+        
+        <div class="control-group">
+          <label>Panel Surya (Unit): <span id="val-solar">2</span></label>
+          <input type="range" id="input-solar" min="0" max="10" value="2">
+        </div>
+
+        <div class="control-group">
+          <label>Turbin Angin (Unit): <span id="val-wind">1</span></label>
+          <input type="range" id="input-wind" min="0" max="5" value="1">
+        </div>
+
+        <div class="control-group">
+          <label>Kapasitas Baterai (kWh): <span id="val-battery">10</span></label>
+          <input type="range" id="input-battery" min="2" max="30" value="10">
+        </div>
+
+        <div class="control-group">
+          <label>Beban Listrik Rumah (Watt): <span id="val-load">1200</span></label>
+          <input type="range" id="input-load" min="200" max="4000" step="100" value="1200">
+        </div>
+      </div>
+
+      <!-- Outut Analisis & Dashboard -->
+      <div class="card">
+        <h2>Kinerja Jaringan & Simpanan</h2>
+
+        <div class="metric-box">
+          <span class="metric-title">Total Produksi Energi</span>
+          <span class="metric-value" id="out-power">0 W</span>
+        </div>
+
+        <div class="metric-box">
+          <span class="metric-title">Status Daya Harian</span>
+          <span class="metric-value" id="out-status">-</span>
+        </div>
+
+        <div class="metric-box">
+          <span class="metric-title">Estimasi Efisiensi Sistem</span>
+          <span class="metric-value" id="out-efficiency">0%</span>
+        </div>
+
+        <div class="battery-container">
+          <div class="metric-title" style="margin-bottom: 6px;">Level Penyimpanan Baterai</div>
+          <div class="battery-bar-outer">
+            <div class="battery-bar-inner" id="battery-fill"></div>
+            <span class="battery-text" id="battery-text">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catatan Edukasi -->
+    <div class="info-box" id="edu-info">
+      Sesuaikan jumlah generator dan beban listrik untuk melihat efisiensi penyimpanan daya pada rumah mandiri energi.
+    </div>
+  </div>
+
+  <script>
+    // Elemen Input
+    const inSolar = document.getElementById('input-solar');
+    const inWind = document.getElementById('input-wind');
+    const inBattery = document.getElementById('input-battery');
+    const inLoad = document.getElementById('input-load');
+
+    // Elemen Tampilan Nilai Input
+    const valSolar = document.getElementById('val-solar');
+    const valWind = document.getElementById('val-wind');
+    const valBattery = document.getElementById('val-battery');
+    const valLoad = document.getElementById('val-load');
+
+    // Elemen Tampilan Output
+    const outPower = document.getElementById('out-power');
+    const outStatus = document.getElementById('out-status');
+    const outEfficiency = document.getElementById('out-efficiency');
+    const batteryFill = document.getElementById('battery-fill');
+    const batteryText = document.getElementById('battery-text');
+    const eduInfo = document.getElementById('edu-info');
+
+    // Konstanta daya acuan (Watt per unit)
+    const POWER_PER_SOLAR = 350; // Panel surya rata-rata 350W
+    const POWER_PER_WIND = 500;  // Turbin angin kecil 500W
+
+    function calculateGrid() {
+      const countSolar = parseInt(inSolar.value);
+      const countWind = parseInt(inWind.value);
+      const capBattery = parseInt(inBattery.value);
+      const houseLoad = parseInt(inLoad.value);
+
+      // Update label input
+      valSolar.textContent = countSolar;
+      valWind.textContent = countWind;
+      valBattery.textContent = capBattery;
+      valLoad.textContent = houseLoad;
+
+      // Hitung total pasokan daya
+      const solarPower = countSolar * POWER_PER_SOLAR;
+      const windPower = countWind * POWER_PER_WIND;
+      const totalPowerGenerated = solarPower + windPower;
+
+      // Hitung efisiensi konversi sistem energi (asumsi kerugian konversi inverter & kabel ~15%)
+      const baseEfficiency = 85; 
+      let netPower = totalPowerGenerated * (baseEfficiency / 100);
+
+      // Persentase Keseimbangan Energi
+      const balance = netPower - houseLoad;
+
+      // Hitung persentase keterisian baterai terestimasi (simulasi kondisi harian)
+      let batteryPercent = 0;
+      if (houseLoad > 0) {
+        let ratio = (netPower / houseLoad) * 50; // 100% rasion pasokan/beban setara 50% kapasitas terisi
+        batteryPercent = Math.min(Math.max(Math.round(ratio), 5), 100);
+      }
+
+      // Update Tampilan Output
+      outPower.textContent = `${Math.round(totalPowerGenerated)} W`;
+      
+      // Update Baterai Visual
+      batteryFill.style.width = `${batteryPercent}%`;
+      batteryText.textContent = `${batteryPercent}%`;
+
+      if (batteryPercent < 20) {
+        batteryFill.style.backgroundColor = '#ef4444'; // Merah
+      } else if (batteryPercent < 60) {
+        batteryFill.style.backgroundColor = '#eab308'; // Kuning
+      } else {
+        batteryFill.style.backgroundColor = '#22c55e'; // Hijau
+      }
+
+      // Analisis Status & Catatan Edukasi
+      if (balance >= 0) {
+        outStatus.textContent = 'Surplus Daya';
+        outStatus.style.color = '#16a34a';
+        outEfficiency.textContent = `${baseEfficiency}%`;
+        eduInfo.innerHTML = `<strong>Status Optimal:</strong> Total daya dari Panel Surya (${solarPower}W) dan Turbin Angin (${windPower}W) mencukupi kebutuhan rumah (${houseLoad}W). Sisa daya disimpan ke dalam baterai ${capBattery} kWh.`;
+      } else {
+        outStatus.textContent = 'Defisit Daya';
+        outStatus.style.color = '#dc2626';
+        
+        // Hitung penurunan efisiensi karena kekurangan daya pasokan
+        const effectiveEff = Math.round((netPower / houseLoad) * baseEfficiency);
+        outEfficiency.textContent = `${Math.max(effectiveEff, 0)}%`;
+        
+        eduInfo.innerHTML = `<strong>Peringatan Defisit:</strong> Beban rumah (${houseLoad}W) melebihi pasokan harian (${Math.round(netPower)}W). Baterai akan menguras daya simpanan untuk menutup kekurangan tersebut.`;
+      }
+    }
+
+    // Event Listener untuk update otomatis saat slider digeser
+    inSolar.addEventListener('input', calculateGrid);
+    inWind.addEventListener('input', calculateGrid);
+    inBattery.addEventListener('input', calculateGrid);
+    inLoad.addEventListener('input', calculateGrid);
+
+    // Jalankan kalkulasi awal
+    calculateGrid();
+  </script>
+</body>
+</html>
